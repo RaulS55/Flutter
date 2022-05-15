@@ -1,28 +1,40 @@
-import 'package:dio/dio.dart';
-import 'package:logger/logger.dart';
+import 'package:flutter_api_rest/helper/http.dart';
+import 'package:flutter_api_rest/helper/http_response.dart';
+import 'package:flutter_api_rest/models/authentication_response.dart';
 
 class AuthenticationApi {
-  final Dio _dio = Dio();
-  final Logger _logger = Logger();
+  final Http _http;
 
-  Future<void> register(
+  AuthenticationApi(this._http);
+
+  Future<HttpResponse<AuthenticationResponse>> register(
       {required String userName,
       required String email,
-      required String password}) async {
-    try {
-      final response = await _dio.post(
-        "https://curso-api-flutter.herokuapp.com/api/v1/register",
-        //options: Options(headers: {"Content-Type": "application/json"}),
-        data: {
-          "username": userName,
-          "email": email,
-          "password": password,
-        },
-      );
-      //Tiene los datos devueltos por la API
-      _logger.i(response.data);
-    } catch (e) {
-      _logger.e(e);
-    }
+      required String password}) {
+    return _http.request<AuthenticationResponse>(
+      "/api/v1/register",
+      method: "POST",
+      data: {
+        "username": userName,
+        "email": email,
+        "password": password,
+      },
+      parser: (data) => AuthenticationResponse.fromJson(data),
+    );
+  }
+
+  Future<HttpResponse<AuthenticationResponse>> login(
+      {required String email, required String password}) async {
+    return _http.request<AuthenticationResponse>(
+      "/api/v1/login",
+      method: "POST",
+      data: {
+        "email": email,
+        "password": password,
+      },
+      parser: (data) {
+        return AuthenticationResponse.fromJson(data);
+      },
+    );
   }
 }

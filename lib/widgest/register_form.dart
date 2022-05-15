@@ -4,6 +4,8 @@ import 'package:flutter_api_rest/api/authentication_api/authentication_api.dart'
 import 'package:flutter_api_rest/utils/dialogs.dart';
 import 'package:flutter_api_rest/utils/responsive.dart';
 import 'package:flutter_api_rest/widgest/input_text.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
 
 ///Mi login personalizado
 class RegisterForm extends StatefulWidget {
@@ -16,18 +18,35 @@ class RegisterForm extends StatefulWidget {
 class _RegisterFormState extends State<RegisterForm> {
   String _email = "", _password = "", _userName = "";
   final GlobalKey<FormState> _formKey = GlobalKey();
-  final AuthenticationApi _authenticationApi = AuthenticationApi();
+  final Logger _logger = Logger();
 
   Future<void> _submit() async {
     final isOk = _formKey.currentState!.validate();
     if (isOk) {
       ProgresDialog.show(context);
-      await _authenticationApi.register(
+      final _authenticationApi = GetIt.instance<AuthenticationApi>();
+      final response = await _authenticationApi.register(
         userName: _userName,
         email: _email,
         password: _password,
       );
       ProgresDialog.dissMiss(context);
+
+      String message = response.error!.message;
+      if (response.error!.statusCode == -1) {
+        message = "No internet";
+      }
+
+      if (response.data != null) {
+        _logger.i("Register Ok ${response.data}");
+        Navigator.pushNamedAndRemoveUntil(
+            context, "home", (route) => route.settings.name == "login");
+      } else {
+        _logger.e("Register Error StatusCode ${response.error!.statusCode}");
+        _logger.e("Register Error message $message");
+        _logger.e("Register Error data ${response.error!.data}");
+        Dialogs.alert(context, title: "ERROR", description: message);
+      }
     }
   }
 

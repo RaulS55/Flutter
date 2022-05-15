@@ -1,7 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_api_rest/api/authentication_api/authentication_api.dart';
+import 'package:flutter_api_rest/utils/dialogs.dart';
 import 'package:flutter_api_rest/utils/responsive.dart';
 import 'package:flutter_api_rest/widgest/input_text.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
 
 ///Mi login personalizado
 class LoginForm extends StatefulWidget {
@@ -14,10 +18,34 @@ class LoginForm extends StatefulWidget {
 class _LoginFormState extends State<LoginForm> {
   String _email = "", _password = "";
   final GlobalKey<FormState> _formKey = GlobalKey();
+  final Logger _logger = Logger();
 
-  _submit() {
+  Future<void> _submit() async {
     final isOk = _formKey.currentState!.validate();
-    if (isOk) {}
+    if (isOk) {
+      ProgresDialog.show(context);
+      final _authenticationApi = GetIt.instance<AuthenticationApi>();
+      final response =
+          await _authenticationApi.login(email: _email, password: _password);
+      ProgresDialog.dissMiss(context);
+
+      String message = "";
+      if (response.error != null) {
+        message = response.error!.message;
+        if (response.error!.statusCode == -1) {
+          message = "No internet";
+        }
+      }
+
+      if (response.data != null) {
+        Navigator.pushNamedAndRemoveUntil(context, "home", (route) => false);
+      } else {
+        _logger.e("Register Error StatusCode ${response.error!.statusCode}");
+        _logger.e("Register Error message $message");
+        _logger.e("Register Error data ${response.error!.data}");
+        Dialogs.alert(context, title: "ERROR", description: message);
+      }
+    }
   }
 
   @override
@@ -61,6 +89,8 @@ class _LoginFormState extends State<LoginForm> {
                 },
               ),
               SizedBox(height: _responsive.dp(6)),
+
+              //BOTOM PARA LOGEAR
               SizedBox(
                 width: double.infinity,
                 child: CupertinoButton(
